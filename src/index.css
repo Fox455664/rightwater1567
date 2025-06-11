@@ -1,5 +1,3 @@
-/* src/index.css */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -52,15 +50,9 @@
 }
 
 @layer base {
-  /*
-   * {
-   *   @apply border-border;
-   * }
-  */ /* <-- لقد قمت بتعطيل هذا الجزء مؤقتاً للتجربة */
-  
   body {
     @apply bg-background text-foreground;
-    /* الطريقة البديلة والصحيحة لتعيين لون الحدود الأساسي */
+    /* الطريقة الصحيحة لتعيين لون الحدود الافتراضي */
     border-color: hsl(var(--border)); 
   }
 }
