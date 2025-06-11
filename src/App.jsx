@@ -13,8 +13,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { Button } from '@/components/ui/button';
 
 // --- استيراد الهياكل (Layouts) ---
-import AdminLayout from '@/components/admin/AdminLayout';
-import ProfileLayout from '@/components/ProfileLayout'; // <<<-- 1. استيراد هيكل الملف الشخصي
+import AdminLayout from '@/components/admin/AdminLayout.jsx';
+import ProfileLayout from '@/components/ProfileLayout.jsx'; // <<<-- 1. استيراد هيكل الملف الشخصي
 
 // --- استيراد صفحات الموقع ---
 import HomePage from '@/pages/HomePage';
