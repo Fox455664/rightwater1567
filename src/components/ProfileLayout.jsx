@@ -1,65 +1,46 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+// src/components/auth/ProtectedRoute.js
+
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
+/**
+ * مكون حماية المسارات الذي يعتمد كلياً على AuthContext كمصدر وحيد للحقيقة.
+ * @param {object} props
+ * @param {React.ReactNode} props.children - المكون الذي سيتم عرضه إذا تم التحقق بنجاح.
+ * @param {boolean} [props.adminOnly=false] - هل هذا المسار مخصص للأدمن فقط؟
+ */
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-  const { currentUser, loading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checkingAdmin, setCheckingAdmin] = useState(true);
+  // --- الخطوة 1: استدعاء كل ما نحتاجه من مصدر الحقيقة الوحيد ---
+  const { currentUser, isAdmin, loading } = useAuth();
+  const location = useLocation();
 
-  useEffect(() => {
-    if (!adminOnly) {
-      setCheckingAdmin(false);
-      return;
-    }
-
-    if (!currentUser) {
-      setCheckingAdmin(false);
-      return;
-    }
-
-    const checkAdminStatus = async () => {
-      try {
-        const db = getFirestore();
-        const adminDocRef = doc(db, 'admins', currentUser.uid);
-        const adminDocSnap = await getDoc(adminDocRef);
-
-        if (adminDocSnap.exists()) {
-          const data = adminDocSnap.data();
-          setIsAdmin(data.role === 'admin');  // تأكد أن الدور admin
-        } else {
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error('خطأ في التحقق من صلاحية الأدمن:', error);
-        setIsAdmin(false);
-      } finally {
-        setCheckingAdmin(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, [adminOnly, currentUser]);
-
-  if (loading || checkingAdmin) {
+  // --- الخطوة 2: حالة تحميل واحدة فقط، قادمة من الـ Context ---
+  // لا يوجد داعي لوجود checkingAdmin بعد الآن.
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="ml-4 text-xl text-foreground">جاري التحقق من صلاحيات الدخول...</p>
+        <p className="ml-4 rtl:mr-4 text-xl text-foreground">جاري التحقق من صلاحيات الدخول...</p>
       </div>
     );
   }
 
+  // --- الخطوة 3: التحقق من وجود مستخدم مسجل ---
+  // إذا لم يكن هناك مستخدم، يتم توجيهه لصفحة الدخول مع حفظ الصفحة الحالية للعودة إليها.
   if (!currentUser) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // --- الخطوة 4: التحقق من صلاحيات الأدمن (إذا كان المسار يتطلب ذلك) ---
+  // نعتمد على `isAdmin` من الـ Context مباشرةً.
   if (adminOnly && !isAdmin) {
+    // إذا كان المستخدم ليس أدمن ويحاول الوصول لصفحة أدمن، يتم توجيهه للصفحة الرئيسية.
     return <Navigate to="/" replace />;
   }
 
+  // --- إذا نجحت كل الاختبارات، يتم عرض المكون المحمي ---
   return <>{children}</>;
 };
 
