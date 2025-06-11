@@ -1,3 +1,5 @@
+// src/pages/SignupPage.jsx (النسخة النهائية مع خانة الشروط والأحكام)
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,80 +10,66 @@ import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 import { UserPlus, Mail, KeyRound, User as UserIcon } from 'lucide-react';
 
-// ======================= 1. استيراد كل حاجة محتاجينها =======================
-import { auth, db } from '@/firebase'; // استوردنا db
+// --- استيراد الـ Checkbox واللينك ---
+import { Checkbox } from "@/components/ui/checkbox"; // <<<--- 1. استيراد مكون الـ Checkbox
+
+import { auth, db } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, Timestamp } from 'firebase/firestore'; // استوردنا أدوات Firestore
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 
 const SignupPage = () => {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false); // <<<--- 2. إضافة حالة للـ Checkbox
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // ======================= 2. تعديل دالة إنشاء الحساب =======================
   const handleSignup = async (e) => {
     e.preventDefault();
-    if (password.length < 6) {
+
+    // <<<--- 3. التحقق من الموافقة على الشروط أولاً ---
+    if (!agreedToTerms) {
       toast({
-        title: "كلمة المرور ضعيفة",
-        description: "يجب أن تكون كلمة المرور 6 أحرف على الأقل.",
+        title: "الموافقة على الشروط",
+        description: "يجب عليك الموافقة على الشروط والأحكام للمتابعة.",
         variant: "destructive",
       });
       return;
     }
+
+    if (password.length < 6) {
+      toast({ title: "كلمة المرور ضعيفة", description: "يجب أن تكون 6 أحرف على الأقل.", variant: "destructive" });
+      return;
+    }
     if (password !== confirmPassword) {
-      toast({
-        title: "خطأ في كلمة المرور",
-        description: "كلمتا المرور غير متطابقتين.",
-        variant: "destructive",
-      });
+      toast({ title: "خطأ في كلمة المرور", description: "كلمتا المرور غير متطابقتين.", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
-      // الخطوة أ: إنشاء الحساب في Authentication (دي كانت عندك)
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      // الخطوة ب: تحديث اسم المستخدم في Authentication (دي كانت عندك)
       await updateProfile(user, { displayName });
-
-      // ======================= الكود الجديد والمهم =======================
-      // الخطوة ج: إنشاء مستند للمستخدم في Firestore Database
-      // بنستخدم setDoc عشان ندي للملف نفس الـ ID بتاع المستخدم (user.uid)
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         displayName: displayName,
         email: email,
         createdAt: Timestamp.now(),
-        role: 'user' // ممكن تضيف دور للمستخدم (user أو admin)
+        role: 'user'
       });
-      // ======================= نهاية الكود الجديد =======================
-
-      toast({
-        title: "تم إنشاء الحساب بنجاح!",
-        description: `مرحباً بك ${displayName || email}!`,
-      });
-      navigate('/'); // توجيه المستخدم للصفحة الرئيسية
-
+      toast({ title: "تم إنشاء الحساب بنجاح!", description: `مرحباً بك ${displayName || email}!` });
+      navigate('/');
     } catch (error) {
-      // ======================= 3. تحسين رسائل الخطأ =======================
-      let errorMessage = "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
+      let errorMessage = "حدث خطأ غير متوقع.";
       if (error.code === 'auth/email-already-in-use') {
         errorMessage = "هذا البريد الإلكتروني مسجل بالفعل. حاول تسجيل الدخول.";
       } else if (error.code === 'auth/invalid-email') {
         errorMessage = "البريد الإلكتروني الذي أدخلته غير صالح.";
       }
-      
-      toast({
-        title: "فشل إنشاء الحساب",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast({ title: "فشل إنشاء الحساب", description: errorMessage, variant: "destructive" });
     }
     setLoading(false);
   };
@@ -95,12 +83,7 @@ const SignupPage = () => {
     >
       <Card className="w-full max-w-md shadow-2xl glassmorphism-card">
         <CardHeader className="text-center">
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 260, damping: 20 }}
-            className="mx-auto bg-gradient-to-r from-primary to-secondary text-white rounded-full p-3 w-fit mb-4"
-          >
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring", stiffness: 260, damping: 20 }} className="mx-auto bg-gradient-to-r from-primary to-secondary text-white rounded-full p-3 w-fit mb-4">
             <UserPlus size={32} />
           </motion.div>
           <CardTitle className="text-3xl font-bold text-primary">إنشاء حساب جديد</CardTitle>
@@ -108,6 +91,7 @@ const SignupPage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
+            {/* ... حقول الاسم والإيميل وكلمة المرور كما هي ... */}
             <div className="space-y-1">
               <Label htmlFor="displayName">الاسم الكامل</Label>
               <div className="relative">
@@ -136,6 +120,28 @@ const SignupPage = () => {
                 <Input id="confirmPassword" type="password" placeholder="********" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="pl-10"/>
               </div>
             </div>
+            
+            {/* <<<--- 4. إضافة خانة الموافقة على الشروط هنا --- */}
+            <div className="items-top flex space-x-2 space-x-reverse pt-2">
+              <Checkbox 
+                id="terms" 
+                checked={agreedToTerms} 
+                onCheckedChange={setAgreedToTerms}
+                aria-label="الموافقة على الشروط والأحكام"
+              />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="terms"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  أوافق على
+                  <Link to="/terms-conditions" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80 mx-1">
+                    الشروط والأحكام
+                  </Link>
+                </label>
+              </div>
+            </div>
+
             <Button type="submit" className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-lg" disabled={loading}>
               {loading ? 'جاري الإنشاء...' : 'إنشاء الحساب'}
             </Button>
