@@ -50,6 +50,7 @@ module.exports = {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))',
 				},
+        // --- الألوان بتاعتك رجعت هنا يا بطل! ---
         'water-blue': {
           light: '#A0D2DB',
           DEFAULT: '#3A86FF',
