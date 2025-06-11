@@ -35,10 +35,22 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
+      
       if (user) {
         try {
-          const adminDoc = await getDoc(doc(db, "admins", user.uid));
+          // جلب بيانات الأدمن واليوزر في نفس الوقت لتحسين الأداء
+          const adminDocPromise = getDoc(doc(db, "admins", user.uid));
+          const userDocPromise = getDoc(doc(db, "users", user.uid));
+          
+          const [adminDoc, userDoc] = await Promise.all([adminDocPromise, userDocPromise]);
+          
           setIsAdmin(adminDoc.exists());
+
+          // يمكنك هنا تحديث بيانات المستخدم في Context لو احتجت (مثل الدور أو بيانات إضافية)
+          // if (userDoc.exists()) {
+          //   // setUserData(userDoc.data());
+          // }
+
         } catch (error) {
           console.error("خطأ في التحقق من الصلاحيات:", error);
           setIsAdmin(false);
@@ -46,6 +58,8 @@ export function AuthProvider({ children }) {
       } else {
         setIsAdmin(false);
       }
+      
+      // -- التحسين الثاني: لا نوقف التحميل إلا بعد التأكد من كل شيء --
       setLoading(false);
     });
     return () => unsubscribe();
@@ -56,7 +70,11 @@ export function AuthProvider({ children }) {
   const signUp = async (email, password, displayName) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    
+    // تحديث ملف المستخدم في Auth
     await updateProfile(user, { displayName });
+    
+    // إنشاء ملف المستخدم في Firestore
     await setDoc(doc(db, "users", user.uid), {
       uid: user.uid,
       displayName: displayName,
@@ -64,7 +82,10 @@ export function AuthProvider({ children }) {
       createdAt: serverTimestamp(),
       role: 'user'
     });
-    setCurrentUser(auth.currentUser);
+    
+    // -- التحسين الأول: تم إزالة setCurrentUser من هنا --
+    // onAuthStateChanged سيتولى المهمة تلقائياً.
+    
     return user;
   };
 
@@ -78,34 +99,23 @@ export function AuthProvider({ children }) {
 
   const sendPasswordReset = (email) => {
     return sendPasswordResetEmail(auth, email, {
-      url: `${window.location.origin}/login` // يوجه المستخدم لصفحة الدخول بعد إعادة التعيين
+      url: `${window.location.origin}/login`
     });
   };
 
   const updateUserProfile = async (updates) => {
-    if (!currentUser) return Promise.reject(new Error("No user is currently signed in."));
+    if (!currentUser) throw new Error("No user is currently signed in.");
     await updateProfile(currentUser, updates);
-    setCurrentUser({ ...auth.currentUser });
+    // -- التحسين الأول: تم إزالة setCurrentUser من هنا --
+    // onAuthStateChanged سيقوم بالتحديث.
   };
   
-  // --- بداية الدالة الجديدة والمحسّنة لتغيير كلمة المرور ---
-  /**
-   * دالة آمنة لتغيير كلمة المرور.
-   * تقوم أولاً بإعادة مصادقة المستخدم ثم تغيير كلمة المرور.
-   */
   const reauthenticateAndChangePassword = async (currentPassword, newPassword) => {
     if (!currentUser) throw new Error("No user is currently signed in.");
-    
-    // 1. إنشاء "بيانات اعتماد" باستخدام كلمة المرور الحالية
     const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
-    
-    // 2. إعادة المصادقة باستخدام بيانات الاعتماد هذه
     await reauthenticateWithCredential(currentUser, credential);
-    
-    // 3. إذا نجحت الخطوة السابقة، قم بتحديث كلمة المرور
     await firebaseUpdatePassword(currentUser, newPassword);
   };
-  // --- نهاية الدالة الجديدة ---
 
   // تجميع كل القيم والدوال
   const value = {
@@ -117,14 +127,14 @@ export function AuthProvider({ children }) {
     signOut,
     sendPasswordReset,
     updateUserProfile,
-    reauthenticateAndChangePassword, // <-- الدالة الجديدة بدلاً من الدالتين القديمتين
+    reauthenticateAndChangePassword,
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="ml-4 text-xl text-foreground">جاري تحميل بيانات المستخدم...</p>
+        <p className="ml-4 rtl:mr-4 text-xl text-foreground">جاري تحميل بيانات المستخدم...</p>
       </div>
     );
   }
