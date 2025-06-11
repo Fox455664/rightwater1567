@@ -25,7 +25,7 @@ import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import UserProfilePage from '@/pages/UserProfilePage';
-import ChangePasswordPage from '@/pages/ChangePasswordPage';
+import ChangePasswordPage from '@/pages/ChangePasswordPage.jsx';
 
 // --- استيراد صفحات عملية الشراء ---
 import CheckoutPage from '@/pages/CheckoutPage';
