@@ -1,97 +1,83 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-	darkMode: ['class'],
-	content: [
-		'./pages/**/*.{js,jsx}',
-		'./components/**/*.{js,jsx}',
-		'./app/**/*.{js,jsx}',
-		'./src/**/*.{js,jsx}',
-	],
-	theme: {
-		container: {
-			center: true,
-			padding: '2rem',
-			screens: {
-				'2xl': '1400px',
-			},
-		},
-		extend: {
-			colors: {
-				border: 'hsl(var(--border))',
-				input: 'hsl(var(--input))',
-				ring: 'hsl(var(--ring))',
-				background: 'hsl(var(--background))',
-				foreground: 'hsl(var(--foreground))',
-				primary: {
-					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))',
-				},
-				secondary: {
-					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))',
-				},
-				destructive: {
-					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))',
-				},
-				muted: {
-					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))',
-				},
-				accent: {
-					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))',
-				},
-				popover: {
-					DEFAULT: 'hsl(var(--popover))',
-					foreground: 'hsl(var(--popover-foreground))',
-				},
-				card: {
-					DEFAULT: 'hsl(var(--card))',
-					foreground: 'hsl(var(--card-foreground))',
-				},
-        // --- الألوان بتاعتك رجعت هنا يا بطل! ---
-        'water-blue': {
-          light: '#A0D2DB',
-          DEFAULT: '#3A86FF',
-          dark: '#00509D',
-        },
-        'water-green': {
-          light: '#C9E4CA',
-          DEFAULT: '#78C091',
-          dark: '#40916C',
-        },
-			},
-			borderRadius: {
-				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)',
-			},
-			keyframes: {
-				'accordion-down': {
-					from: { height: '0' },
-					to: { height: 'var(--radix-accordion-content-height)' },
-				},
-				'accordion-up': {
-					from: { height: 'var(--radix-accordion-content-height)' },
-					to: { height: '0' },
-				},
-        'fadeIn': {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        'slideInUp': {
-          '0%': { transform: 'translateY(20px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        }
-			},
-			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-        'fadeIn': 'fadeIn 0.5s ease-in-out',
-        'slideInUp': 'slideInUp 0.5s ease-out',
-			},
-		},
-	},
-	plugins: [require('tailwindcss-animate')],
-};
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 
+      الهوية اللونية الجديدة لـ "رايت واتر"
+      الأزرق هو الأساسي (Primary) والأخضر هو الثانوي (Secondary)
+    */
+    --background: 0 0% 100%; /* خلفية بيضاء نظيفة */
+    --foreground: 224 71.4% 4.1%; /* لون نص أسود داكن مائل للزرقة */
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+
+    --primary: 221 83% 53%; /* <-- اللون الأساسي: أزرق رايت واتر (#3A86FF) */
+    --primary-foreground: 210 20% 98%; /* لون النص فوق الأساسي (أبيض) */
+
+    --secondary: 142 41% 49%; /* <-- اللون الثانوي: أخضر رايت واتر (#78C091) */
+    --secondary-foreground: 210 20% 98%; /* لون النص فوق الثانوي (أبيض) */
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 53%; /* لون الـ ring يكون زي اللون الأساسي */
+
+    --radius: 0.75rem; /* تعديل بسيط ليكون شكل الحواف أكثر نعومة */
+  }
+
+  .dark {
+    /* 
+      الوضع الليلي (Dark Mode) - مهم جداً يكون متناسق
+    */
+    --background: 224 71.4% 4.1%;
+    --foreground: 210 20% 98%;
+
+    --card: 224 71.4% 4.1%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 224 71.4% 4.1%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 142 41% 49%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 215 27.9% 16.9%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 221 83% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
