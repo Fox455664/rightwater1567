@@ -1,19 +1,30 @@
 // src/pages/CheckoutPage.jsx (النسخة النهائية والمعدّلة)
 
 import React, { useState, useEffect } from 'react';
+// استخدام next/navigation بدلاً من react-router-dom إذا كان المشروع Next.js
+// سأبقيها react-router-dom كما في الكود الأصلي
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { db, collection, addDoc, Timestamp, doc, updateDoc, getDoc } from '@/firebase';
-import emailjs from '@emailjs/browser';
+import { 
+    db, 
+    collection, 
+    addDoc, 
+    Timestamp, 
+    doc, 
+    updateDoc, 
+    increment // <-- 🔥🔥🔥 تم استيراد increment 🔥🔥🔥
+} from '@/firebase';
+import emailjs from '@emailjs/browser'; // تأكد من أن هذه المكتبة مثبتة ومهيأة
 import { useCart } from '@/contexts/CartContext';
-import { Loader2, Lock, ArrowRight, ShoppingBag } from 'lucide-react';
+import { Loader2, Lock, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 
+// دالة التحقق من صحة المدخلات (تبقى كما هي)
 const validateForm = (formData) => {
   const errors = {};
   if (!/^[a-zA-Z\u0600-\u06FF\s]+$/.test(formData.firstName.trim())) errors.firstName = "الاسم الأول يجب أن يحتوي على حروف فقط.";
@@ -41,7 +52,7 @@ const CheckoutPage = () => {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  // <<<--- الجزء الأهم: التأكد من البيانات عند تحميل الصفحة ---
+  // التأكد من البيانات عند تحميل الصفحة (يبقى كما هو)
   useEffect(() => {
     const sourceState = location.state;
     if (sourceState && sourceState.fromCart && sourceState.cartItems?.length > 0) {
@@ -56,7 +67,7 @@ const CheckoutPage = () => {
     }
   }, [location.state, navigate, toast]);
   
-  // <<<--- تحديث بيانات الفورم تلقائيا عند توفر بيانات المستخدم ---
+  // تحديث بيانات الفورم تلقائيا عند توفر بيانات المستخدم (يبقى كما هو)
   useEffect(() => {
     if (currentUser) {
         const nameParts = currentUser.displayName?.split(' ') || ['', ''];
@@ -80,7 +91,7 @@ const CheckoutPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!cartData) return; // حماية إضافية
+    if (!cartData) return;
 
     const errors = validateForm(formData);
     setFormErrors(errors);
@@ -106,16 +117,29 @@ const CheckoutPage = () => {
       
       const docRef = await addDoc(collection(db, 'orders'), orderData);
 
-      for (const item of cartData.cartItems) {
+      // 🔥🔥🔥 --- بداية الإصلاح الجذري لمنطق تحديث المخزون --- 🔥🔥🔥
+      const stockUpdatePromises = cartData.cartItems.map(item => {
         const productRef = doc(db, "products", item.id);
-        const productSnap = await getDoc(productRef);
-        if (productSnap.exists()) {
-          const newStock = Math.max(0, (productSnap.data().stock || 0) - item.quantity);
-          await updateDoc(productRef, { stock: newStock });
-        }
-      }
+        // نستخدم increment لضمان عملية طرح ذرية وآمنة من المخزون
+        // هذا يمنع تماماً حدوث "حالة السباق"
+        return updateDoc(productRef, { 
+            stock: increment(-item.quantity) 
+        });
+      });
       
-      // ... (كود إرسال الإيميلات هنا كما هو) ...
+      // ننتظر اكتمال جميع عمليات تحديث المخزون
+      await Promise.all(stockUpdatePromises);
+      // 🔥🔥🔥 --- نهاية الإصلاح الجذري --- 🔥🔥🔥
+      
+      // كود إرسال الإيميلات (يبقى كما هو، تأكد من صحة بياناتك)
+      /*
+      emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams, 'YOUR_PUBLIC_KEY')
+        .then((response) => {
+          console.log('SUCCESS!', response.status, response.text);
+        }, (err) => {
+          console.log('FAILED...', err);
+        });
+      */
 
       clearCart();
       toast({ title: "🎉 تم إرسال طلبك بنجاح!", description: `رقم طلبك هو: ${docRef.id}`, className: "bg-green-500 text-white", duration: 7000, });
@@ -123,13 +147,12 @@ const CheckoutPage = () => {
 
     } catch (error) {
       console.error("Error placing order: ", error);
-      toast({ title: "حدث خطأ", description: "لم نتمكن من إتمام طلبك.", variant: "destructive" });
+      toast({ title: "حدث خطأ", description: "لم نتمكن من إتمام طلبك. قد يكون هناك مشكلة في المخزون.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // إذا كانت البيانات لم تصل بعد، أظهر مؤشر تحميل
   if (!cartData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
@@ -139,48 +162,46 @@ const CheckoutPage = () => {
     );
   }
 
-  // الآن الكود آمن، لأننا متأكدون من وجود cartData
   return (
     <div className="container mx-auto px-4 py-12">
       <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-4xl font-extrabold text-center mb-8 text-primary">إتمام عملية الدفع</motion.h1>
       <div className="grid lg:grid-cols-3 gap-8">
         <motion.form onSubmit={handleSubmit} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2 space-y-6 bg-card p-6 rounded-xl shadow-xl">
-          {/* ... (محتوى الفورم هنا كما هو) ... */}
            <div className="grid md:grid-cols-2 gap-4">
             <div>
                 <Label htmlFor="firstName">الاسم الأول</Label>
-                <Input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required className={formErrors.firstName ? 'border-red-500' : ''} />
-                {formErrors.firstName && <p className="text-red-500 text-xs mt-1">{formErrors.firstName}</p>}
+                <Input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required className={formErrors.firstName ? 'border-destructive' : ''} />
+                {formErrors.firstName && <p className="text-destructive text-xs mt-1">{formErrors.firstName}</p>}
             </div>
             <div>
                 <Label htmlFor="lastName">الاسم الأخير</Label>
-                <Input id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} required className={formErrors.lastName ? 'border-red-500' : ''} />
-                {formErrors.lastName && <p className="text-red-500 text-xs mt-1">{formErrors.lastName}</p>}
+                <Input id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} required className={formErrors.lastName ? 'border-destructive' : ''} />
+                {formErrors.lastName && <p className="text-destructive text-xs mt-1">{formErrors.lastName}</p>}
             </div>
             <div>
                 <Label htmlFor="email">البريد الإلكتروني</Label>
-                <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required className={formErrors.email ? 'border-red-500' : ''} />
-                {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+                <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required className={formErrors.email ? 'border-destructive' : ''} />
+                {formErrors.email && <p className="text-destructive text-xs mt-1">{formErrors.email}</p>}
             </div>
             <div>
                 <Label htmlFor="phone">رقم الهاتف</Label>
-                <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required className={formErrors.phone ? 'border-red-500' : ''} />
-                {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
+                <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required className={formErrors.phone ? 'border-destructive' : ''} />
+                {formErrors.phone && <p className="text-destructive text-xs mt-1">{formErrors.phone}</p>}
             </div>
             <div className="md:col-span-2">
                 <Label htmlFor="address">العنوان</Label>
-                <Input id="address" name="address" value={formData.address} onChange={handleChange} required className={formErrors.address ? 'border-red-500' : ''} />
-                {formErrors.address && <p className="text-red-500 text-xs mt-1">{formErrors.address}</p>}
+                <Input id="address" name="address" value={formData.address} onChange={handleChange} required className={formErrors.address ? 'border-destructive' : ''} />
+                {formErrors.address && <p className="text-destructive text-xs mt-1">{formErrors.address}</p>}
             </div>
             <div>
                 <Label htmlFor="city">المدينة</Label>
-                <Input id="city" name="city" value={formData.city} onChange={handleChange} required className={formErrors.city ? 'border-red-500' : ''} />
-                {formErrors.city && <p className="text-red-500 text-xs mt-1">{formErrors.city}</p>}
+                <Input id="city" name="city" value={formData.city} onChange={handleChange} required className={formErrors.city ? 'border-destructive' : ''} />
+                {formErrors.city && <p className="text-destructive text-xs mt-1">{formErrors.city}</p>}
             </div>
             <div>
                 <Label htmlFor="postalCode">الرمز البريدي</Label>
-                <Input id="postalCode" name="postalCode" value={formData.postalCode} onChange={handleChange} required className={formErrors.postalCode ? 'border-red-500' : ''} />
-                {formErrors.postalCode && <p className="text-red-500 text-xs mt-1">{formErrors.postalCode}</p>}
+                <Input id="postalCode" name="postalCode" value={formData.postalCode} onChange={handleChange} required className={formErrors.postalCode ? 'border-destructive' : ''} />
+                {formErrors.postalCode && <p className="text-destructive text-xs mt-1">{formErrors.postalCode}</p>}
             </div>
           </div>
           <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
@@ -190,7 +211,6 @@ const CheckoutPage = () => {
         </motion.form>
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="sticky top-24">
           <Card className="p-6 shadow-xl rounded-xl bg-card">
-            {/* ... (محتوى ملخص الطلب هنا كما هو، مع استخدام cartData) ... */}
              <CardHeader className="p-0 mb-4"><CardTitle className="text-center text-lg font-semibold text-primary">ملخص الطلب</CardTitle></CardHeader>
               <CardContent className="p-0">
                   <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar space-y-3 mb-3">
