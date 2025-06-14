@@ -3,7 +3,8 @@
 "use client"; // <--- مهم جداً في Next.js App Router
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+// السطر الصحيح
+import { Link } from 'react-router-dom';
 import { useRouter } from 'next/navigation'; // <-- التغيير الأول: استخدام useRouter من Next.js
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
