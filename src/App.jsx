@@ -33,7 +33,7 @@ import CheckoutPage from '@/pages/CheckoutPage.jsx';
 import OrderSuccessPage from '@/pages/OrderSuccessPage.jsx';
 import OrderDetailsPage from '@/pages/OrderDetailsPage.jsx';
 import TermsConditionsPage from '@/pages/TermsConditionsPage.jsx';
-import UserOrdersPage from '@/pages/UserOrdersPage.jsx';
+//import UserOrdersPage from '@/pages/UserOrdersPage.jsx';
 // --- صفحات لوحة التحكم ---
 import AdminDashboardPage from '@/pages/AdminDashboardPage.jsx';
 import OrderManagement from '@/components/admin/OrderManagement.jsx';
@@ -82,7 +82,7 @@ function App() {
                 {/* دمجنا ProfileLayout هنا */}
                 <Route path="profile" element={<ProfileLayout />}>
                   <Route index element={<UserProfilePage />} />
-                  <Route path="orders" element={<UserOrdersPage />} />
+                 //  //<Route path="orders" element={<UserOrdersPage />} />
                   <Route path="orders/:orderId" element={<OrderDetailsPage />} />
                   <Route path="change-password" element={<ChangePasswordPage />} />
                 </Route>
