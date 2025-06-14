@@ -33,7 +33,6 @@ import CheckoutPage from '@/pages/CheckoutPage.jsx';
 import OrderSuccessPage from '@/pages/OrderSuccessPage.jsx';
 import OrderDetailsPage from '@/pages/OrderDetailsPage.jsx';
 import TermsConditionsPage from '@/pages/TermsConditionsPage.jsx';
-import UserProfilePage from '@/pages/UserProfilePage.jsx'; 
 
 // --- صفحات لوحة التحكم ---
 import AdminDashboardPage from '@/pages/AdminDashboardPage.jsx';
