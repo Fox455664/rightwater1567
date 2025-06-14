@@ -2,7 +2,7 @@
 "use client"
 import * as React from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog.jsx"
-//import { Command as CommandPrimitive } from "cmdk"
+import { Command as CommandPrimitive } from "cmdk"
 import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 
